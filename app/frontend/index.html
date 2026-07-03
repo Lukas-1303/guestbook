@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>완벽한 3-Tier 요새</title>
+    <style>
+        /* 기본 변수 설정 */
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #ecf0f1;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-radius: 8px;
+        }
+
+        /* 전체 페이지 스타일 */
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 메인 컨테이너 */
+        .container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        /* 제목 */
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* 입력 폼 영역 */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #bdc3c7;
+            border-radius: var(--border-radius);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* 공통 버튼 스타일 */
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ecf0f1;
+            margin: 20px 0;
+        }
+
+        /* 리스트 스타일 */
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8f9fa;
+            margin-bottom: 12px;
+            border-radius: var(--border-radius);
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s;
+        }
+
+        li:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .memo-content {
+            flex: 1;
+            margin-right: 15px;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        /* 수정/삭제 버튼 그룹 */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-edit {
+            background-color: #f1c40f;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        .btn-edit:hover { background-color: #f39c12; }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        .btn-delete:hover { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ 클라우드 자유 게시판 </h1>
+        <!-- 🛡️ 3-Tier 방명록 -->
+        <div class="input-group">
+            <input type="text" id="memoInput" placeholder="새 메모를 입력하세요" onkeypress="handleKeyPress(event)">
+            <button onclick="saveMemo()">저장하기</button>
+        </div>
+        <hr>
+        <ul id="memoList"></ul>
+    </div>
+
+    <script>
+        // 엔터키 입력 지원 추가
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                saveMemo();
+            }
+        }
+
+        // 메모 불러오기 (화면 렌더링)
+        function loadMemos() {
+            fetch('/api/memos').then(res => res.json()).then(data => {
+                document.getElementById('memoList').innerHTML = data.map(m => `
+                    <li>
+                        <span id="content-${m.id}" class="memo-content">${m.content}</span> 
+                        <div class="btn-group">
+                            <button class="btn-edit" onclick="editMemo('${m.id}')">수정</button>
+                            <button class="btn-delete" onclick="deleteMemo('${m.id}')">삭제</button>
+                        </div>
+                    </li>
+                `).join('');
+            });
+        }
+
+        // 저장 (POST)
+        function saveMemo() {
+            const input = document.getElementById('memoInput');
+            const content = input.value.trim();
+            if (!content) {
+                alert('메모를 입력해주세요.');
+                return;
+            }
+            
+            fetch('/api/memos', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content: content })
+            }).then(() => { 
+                input.value = ''; 
+                loadMemos(); 
+            });
+        }
+
+        // 삭제 (DELETE)
+        function deleteMemo(id) {
+            if(confirm('정말 삭제하시겠습니까?')) {
+                fetch(`/api/memos/${id}`, { method: 'DELETE' }).then(() => loadMemos());
+            }
+        }
+
+        // 수정 (PUT)
+        function editMemo(id) {
+            const currentContent = document.getElementById(`content-${id}`).innerText;
+            const newContent = prompt('수정할 내용을 입력하세요:', currentContent);
+            if(newContent && newContent.trim() !== '') {
+                fetch(`/api/memos/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ content: newContent.trim() })
+                }).then(() => loadMemos());
+            }
+        }
+
+        // 페이지 로드 시 최초 실행
+        loadMemos();
+    </script>
+</body>
+</html>

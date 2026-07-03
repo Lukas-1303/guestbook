@@ -1,0 +1,5 @@
+# 실제 사용할 도메인 주소를 아래에 입력하세요.
+# 주의: 이 파일의 이름을 'terraform.tfvars'로 변경하여 사용해야 테라폼이 인식합니다.
+# 'terraform.tfvars' 파일은 .gitignore에 등록되어 있으므로 절대 GitHub에 올라가지 않습니다!
+
+domain_name = "example.com"

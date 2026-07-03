@@ -1,0 +1,94 @@
+name: Deploy 3-Tier App to Amazon ECS
+
+# ==============================================================================
+# GitHub Actions 트리거 (파이프라인이 언제 실행될 것인가?)
+# ==============================================================================
+on:
+  push:
+    branches:
+      - main # main 브랜치에 코드가 푸시될 때만 실행
+    paths:
+      - 'app/**' # app 폴더(Node.js, Nginx 코드)가 수정되었을 때만 파이프라인 작동 (인프라 수정 시엔 작동 X)
+
+# ==============================================================================
+# 환경 변수 (자주 바뀌는 이름들을 최상단에 모아두기)
+# ==============================================================================
+env:
+  AWS_REGION: ap-northeast-1 
+  PROJECT_NAME: guestbook # terraform.tfvars의 project_name과 일치해야 합니다!
+  ECR_WEB_REPO: guestbook-web-repo
+  ECR_WAS_REPO: guestbook-was-repo
+  ECS_CLUSTER: guestbook-cluster
+  ECS_WEB_SERVICE: guestbook-web-service
+  ECS_WAS_SERVICE: guestbook-was-service
+
+jobs:
+  deploy:
+    name: Build, Push, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ------------------------------------------------------------------------------
+      # 1. 깃허브 코드 가져오기 (가장 기본 단계)
+      # ------------------------------------------------------------------------------
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      # ------------------------------------------------------------------------------
+      # 2. AWS 인증 (🚨 팀플 때 에러가 많이 났던 부분! 문법 주의!)
+      # 여기서 GitHub Secrets에 저장된 AWS 계정 정보를 안전하게 불러옵니다.
+      # ------------------------------------------------------------------------------
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ------------------------------------------------------------------------------
+      # 3. AWS ECR(도커 창고) 로그인
+      # ------------------------------------------------------------------------------
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # ------------------------------------------------------------------------------
+      # 4. Backend(WAS) 도커 이미지 빌드 및 푸시
+      # 팀플 때 배우셨던 Git Commit 해시(github.sha)를 태그로 붙여서 버전 관리를 명확히 합니다.
+      # 동시에 latest 태그도 같이 붙여서 ECS가 쉽게 가져갈 수 있게 만듭니다.
+      # ------------------------------------------------------------------------------
+      - name: Build, tag, and push WAS image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building WAS Docker Image..."
+          docker build -t $ECR_REGISTRY/${{ env.ECR_WAS_REPO }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ env.ECR_WAS_REPO }}:latest ./app/backend
+          
+          echo "Pushing WAS Image to ECR..."
+          docker push -a $ECR_REGISTRY/${{ env.ECR_WAS_REPO }}
+
+      # ------------------------------------------------------------------------------
+      # 5. Frontend(Web) 도커 이미지 빌드 및 푸시
+      # ------------------------------------------------------------------------------
+      - name: Build, tag, and push Web image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building Web Docker Image..."
+          docker build -t $ECR_REGISTRY/${{ env.ECR_WEB_REPO }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ env.ECR_WEB_REPO }}:latest ./app/frontend
+          
+          echo "Pushing Web Image to ECR..."
+          docker push -a $ECR_REGISTRY/${{ env.ECR_WEB_REPO }}
+
+      # ------------------------------------------------------------------------------
+      # 6. ECS 서비스 강제 재시작 (무중단 배포 트리거)
+      # ------------------------------------------------------------------------------
+      - name: Force new deployment for ECS Services
+        run: |
+          echo "Deploying new WAS image to ECS..."
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_WAS_SERVICE }} --force-new-deployment > /dev/null
+          
+          echo "Deploying new Web image to ECS..."
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_WEB_SERVICE }} --force-new-deployment > /dev/null

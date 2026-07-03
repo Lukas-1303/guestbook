@@ -1,0 +1,2 @@
+# 본인의 도메인을 입력하고, 파일 이름을 terraform.tfvars 로 변경하세요.
+domain_name = "example.com"
