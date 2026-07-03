@@ -84,7 +84,7 @@ resource "aws_service_discovery_service" "was" {
     routing_policy = "MULTIVALUE" # 라운드 로빈 로드밸런싱
   }
   health_check_custom_config {
-    failure_threshold = 1
+    # failure_threshold 설정은 AWS Provider 최신 버전에서 더 이상 사용되지 않습니다(Deprecated).
   }
 }
 
