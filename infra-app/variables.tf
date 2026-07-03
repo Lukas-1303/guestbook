@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Project name prefix for all resources"
   type        = string
-  default     = "guestbook-portfolio"
+  default     = "guestbook"
 }
 
 variable "domain_name" {
