@@ -34,7 +34,7 @@ resource "aws_ecs_task_definition" "was" {
       environment = [
         {
           name  = "TABLE_NAME"
-          value = aws_dynamodb_table.memos.name
+          value = data.aws_ssm_parameter.dynamodb_table_name.value
         },
         {
           name  = "AWS_REGION"
@@ -61,7 +61,10 @@ resource "aws_ecs_service" "was" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+    subnets          = [
+      data.aws_ssm_parameter.private_subnet_1.value,
+      data.aws_ssm_parameter.private_subnet_2.value
+    ]
     security_groups  = [aws_security_group.was.id]
     assign_public_ip = false
   }
@@ -134,7 +137,10 @@ resource "aws_ecs_service" "web" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+    subnets          = [
+      data.aws_ssm_parameter.private_subnet_1.value,
+      data.aws_ssm_parameter.private_subnet_2.value
+    ]
     security_groups  = [aws_security_group.web.id]
     assign_public_ip = false
   }
@@ -195,7 +201,7 @@ resource "aws_iam_role_policy" "dynamodb_access" {
         "dynamodb:DeleteItem"
       ]
       Effect   = "Allow"
-      Resource = aws_dynamodb_table.memos.arn
+      Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${data.aws_ssm_parameter.dynamodb_table_name.value}"
     }]
   })
 }

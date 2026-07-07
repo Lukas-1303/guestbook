@@ -11,7 +11,7 @@
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
   description = "Security Group for Public ALB"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_ssm_parameter.vpc_id.value
 
   # HTTP (80) 인바운드 허용: 외부 모든 IP에서 접속 가능하도록 열어둡니다. (나중에 HTTPS 리다이렉트용)
   ingress {
@@ -51,7 +51,7 @@ resource "aws_security_group" "alb" {
 resource "aws_security_group" "web" {
   name        = "${var.project_name}-web-sg"
   description = "Security Group for Web (Nginx) Servers"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_ssm_parameter.vpc_id.value
 
   # HTTP (80) 인바운드 허용: Source를 '0.0.0.0/0'이 아닌 'ALB 보안 그룹'으로 지정합니다. (체이닝)
   ingress {
@@ -81,7 +81,7 @@ resource "aws_security_group" "web" {
 resource "aws_security_group" "was" {
   name        = "${var.project_name}-was-sg"
   description = "Security Group for WAS (Node.js) Servers"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_ssm_parameter.vpc_id.value
 
   # Custom TCP (8080) 인바운드 허용: Source를 'Web 보안 그룹'으로 지정합니다. (체이닝)
   ingress {

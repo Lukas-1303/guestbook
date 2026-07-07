@@ -38,7 +38,7 @@ resource "aws_ecs_cluster" "main" {
 resource "aws_service_discovery_private_dns_namespace" "internal" {
   name        = "local" 
   description = "Private DNS namespace for internal ECS service discovery"
-  vpc         = aws_vpc.main.id
+  vpc         = data.aws_ssm_parameter.vpc_id.value
 
   tags = {
     Name = "${var.project_name}-cloudmap"

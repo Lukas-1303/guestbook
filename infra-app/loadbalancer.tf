@@ -9,7 +9,10 @@ resource "aws_lb" "main" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
+  subnets            = [
+    data.aws_ssm_parameter.public_subnet_1.value,
+    data.aws_ssm_parameter.public_subnet_2.value
+  ]
 
   tags = {
     Name = "${var.project_name}-alb"
@@ -21,7 +24,7 @@ resource "aws_lb_target_group" "web" {
   name        = "${var.project_name}-web-tg"
   port        = 80
   protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_ssm_parameter.vpc_id.value
   target_type = "ip" # 매우 중요: Fargate 전용 설정
 
   health_check {
