@@ -1,5 +1,7 @@
 # AWS ECS Fargate 3-Tier Serverless Architecture
 
+![AWS Architecture](./AWS_Architecture.png)
+
 [![Architecture Decisions](https://img.shields.io/badge/🏛️_ARCHITECTURE_DECISIONS-Click_Here-2c3e50?style=for-the-badge)](./ARCHITECTURE_DECISIONS.md)
 
 본 프로젝트는 AWS 클라우드 환경에서 ECS Fargate와 DynamoDB를 활용하여 구축된 3-Tier 서버리스 아키텍처입니다. 
